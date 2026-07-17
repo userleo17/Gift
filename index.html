@@ -182,7 +182,7 @@
         // ----------------- State & Engine -----------------
         let isAnimating = false;
         
-        // تعديل ترتيب الأحجام: الصغير أولاً (4)، ثم الوسط (6.5)، ثم الكبير (9)
+        // ترتيب الأحجام: الصغير أولاً (4)، ثم الوسط (6.5)، ثم الكبير (9)
         const heartScales = [4, 6.5, 9];
         const heartPaths = [];
         const heartProgress = [0, 0, 0];
@@ -252,10 +252,10 @@
 
                 if (drawHeartsActive) {
                     if (currentHeartDraw < 3) {
-                        // تعديل سرعة رسم كل قلب بناءً على طلبك بالثواني:
-                        // الصغير (i=0): 2 ثانية -> الزيادة بالخطوة = طول المسار / (60 فريم * 2 ثانية) = ~127 / 120 = 1.05
-                        // الوسط (i=1): 3 ثوانٍ -> الزيادة بالخطوة = طول المسار / (60 فريم * 3 ثوانٍ) = ~127 / 180 = 0.7
-                        // الكبير (i=2): 4 ثوانٍ -> الزيادة بالخطوة = طول المسار / (60 فريم * 4 ثوانٍ) = ~127 / 240 = 0.53
+                        // سرعة رسم كل قلب بناءً على طلبك بالثواني:
+                        // الصغير (i=0): 2 ثانية 
+                        // الوسط (i=1): 3 ثوانٍ 
+                        // الكبير (i=2): 4 ثوانٍ 
                         let speeds = [1.05, 0.7, 0.53];
                         
                         heartProgress[currentHeartDraw] += speeds[currentHeartDraw];
@@ -270,7 +270,7 @@
 
                 if (fadeHeartsActive) {
                     if (heartOpacity > 0) {
-                        heartOpacity -= 0.015; 
+                        heartOpacity -= 0.02; // تسريع اختفاء القلب قليلاً ليتزامن مع تلاشي النص
                     } else {
                         heartOpacity = 0;
                         if (!msgTriggered) {
@@ -278,7 +278,7 @@
                             setTimeout(() => {
                                 neonText.style.display = 'none'; 
                                 createGlitter();
-                                chatBubble.style.display = 'block'; // تفعيل العرض بسفاري
+                                chatBubble.style.display = 'block'; // تفعيل العرض لتجاوز قيود سفاري
                                 setTimeout(() => {
                                     chatBubble.style.opacity = '1';
                                     startTypewriter();
@@ -391,34 +391,33 @@
         });
 
         function triggerNextPhase() {
-            // 1. ظهور النص النيوني بالتزامن مع التأثيرات
+            // 1. ظهور النص النيوني
             neonText.classList.add('show-neon');
             
-            // 2. تفعيل إطلاق الألعاب النارية والبالونات معاً
+            // 2. تفعيل توليد الطراطيع والبالونات معاً بالتوازي
             let fwInterval = setInterval(() => {
                 createFirework(cw * (0.2 + Math.random() * 0.6), ch * (0.2 + Math.random() * 0.4));
             }, 600); 
 
             startBalloons();
 
-            // 3. إيقاف توليد البالونات والطراطيع بعد 5 ثوانٍ
+            // 3. توقف كامل التأثيرات معاً بعد 6 ثوانٍ من الاحتفال المستمر
             setTimeout(() => {
-                clearInterval(fwInterval);
-                isGeneratingBalloons = false; // التوقف عن توليد بالونات جديدة
-                clearInterval(balloonInterval);
+                clearInterval(fwInterval); // إيقاف الطراطيع
+                clearInterval(balloonInterval); // إيقاف توليد البالونات الجديدة
+                isGeneratingBalloons = false;
                 
-                // 4. مراقبة انتهاء العناصر تماماً من الشاشة قبل بدء مرحلة التلاشي والرسالة
-                let checkClearInterval = setInterval(() => {
-                    if (fireworks.length === 0 && balloons.length === 0) {
-                        clearInterval(checkClearInterval);
-                        
-                        // تلاشي الكلام والقلب الآن بعد خلو الشاشة تماماً
-                        neonText.classList.add('fade-out-neon');
-                        fadeHeartsActive = true;
-                    }
-                }, 100);
+                // تنظيف فوري للعناصر لكي ينتهوا معاً بدون تعليق بسفاري
+                fireworks = [];
+                balloons = [];
+                
+                // 4. التلاشي المباشر والمضمون للكلام والقلب
+                setTimeout(() => {
+                    neonText.classList.add('fade-out-neon');
+                    fadeHeartsActive = true;
+                }, 500);
 
-            }, 5000); // مدة الاحتفالية قبل البدء بالمسح والتلاشي
+            }, 6000); 
         }
 
         // ----------------- Typewriter Effect -----------------

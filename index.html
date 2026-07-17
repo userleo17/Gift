@@ -91,13 +91,12 @@
         .fade-out-neon {
             opacity: 0 !important;
             transform: scale(0.9) !important;
-            transition: opacity 2s ease, transform 2s ease !important;
+            transition: opacity 1.5s ease, transform 1.5s ease !important;
         }
 
-        /* تعديل تصميم فقاعة الدردشة لإضافة خلفية اللمعة الرصاصية المتحركة */
         #chatBubble {
             opacity: 0;
-            /* خلفية بتدرج رصاصي منساب */
+            display: none; /* مخفي تماماً في البداية لتجنب أي مشاكل بسفاري */
             background: linear-gradient(
                 120deg, 
                 rgba(30, 30, 30, 0.85) 30%, 
@@ -107,6 +106,7 @@
             );
             background-size: 200% 100%;
             animation: silverSheen 4s linear infinite;
+            -webkit-animation: silverSheen 4s linear infinite; /* توافق سفاري */
             -webkit-backdrop-filter: blur(12px); 
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -119,15 +119,18 @@
             font-size: 18px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.05);
             position: relative;
-            transition: opacity 2s ease;
+            transition: opacity 1.5s ease;
             white-space: pre-wrap;
             pointer-events: auto;
             direction: ltr;
             box-sizing: border-box;
         }
 
-        /* أنيميشن تحريك اللمعة الرصاصية */
         @keyframes silverSheen {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        @-webkit-keyframes silverSheen {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
@@ -155,7 +158,7 @@
     <canvas id="canvas"></canvas>
 
     <div class="ui-layer">
-        <button id="startBtn">Click Me!</button>
+        <button id="startBtn">Click Me</button>
         <div id="neonText">Happy Birthday To Yosi 🎉</div>
         <div id="chatBubble"></div>
     </div>
@@ -179,7 +182,8 @@
         // ----------------- State & Engine -----------------
         let isAnimating = false;
         
-        const heartScales = [9, 6.5, 4];
+        // تعديل ترتيب الأحجام: الصغير أولاً (4)، ثم الوسط (6.5)، ثم الكبير (9)
+        const heartScales = [4, 6.5, 9];
         const heartPaths = [];
         const heartProgress = [0, 0, 0];
         let currentHeartDraw = 0;
@@ -248,7 +252,13 @@
 
                 if (drawHeartsActive) {
                     if (currentHeartDraw < 3) {
-                        heartProgress[currentHeartDraw] += 0.08; // رسم بطيء جداً ليأخذ حوالي 9 ثوانٍ للقلوب الثلاثة
+                        // تعديل سرعة رسم كل قلب بناءً على طلبك بالثواني:
+                        // الصغير (i=0): 2 ثانية -> الزيادة بالخطوة = طول المسار / (60 فريم * 2 ثانية) = ~127 / 120 = 1.05
+                        // الوسط (i=1): 3 ثوانٍ -> الزيادة بالخطوة = طول المسار / (60 فريم * 3 ثوانٍ) = ~127 / 180 = 0.7
+                        // الكبير (i=2): 4 ثوانٍ -> الزيادة بالخطوة = طول المسار / (60 فريم * 4 ثوانٍ) = ~127 / 240 = 0.53
+                        let speeds = [1.05, 0.7, 0.53];
+                        
+                        heartProgress[currentHeartDraw] += speeds[currentHeartDraw];
                         if (heartProgress[currentHeartDraw] >= heartPaths[currentHeartDraw].length) {
                             currentHeartDraw++;
                         }
@@ -260,7 +270,7 @@
 
                 if (fadeHeartsActive) {
                     if (heartOpacity > 0) {
-                        heartOpacity -= 0.008; // سرعة التلاشي لتتزامن مع تلاشي النص النيوني
+                        heartOpacity -= 0.015; 
                     } else {
                         heartOpacity = 0;
                         if (!msgTriggered) {
@@ -268,9 +278,12 @@
                             setTimeout(() => {
                                 neonText.style.display = 'none'; 
                                 createGlitter();
-                                chatBubble.style.opacity = '1';
-                                startTypewriter();
-                            }, 500); // إظهار الرسالة مباشرة بعد انتهاء تلاشي العناصر
+                                chatBubble.style.display = 'block'; // تفعيل العرض بسفاري
+                                setTimeout(() => {
+                                    chatBubble.style.opacity = '1';
+                                    startTypewriter();
+                                }, 50);
+                            }, 300);
                         }
                     }
                 }
@@ -339,15 +352,20 @@
         }
 
         let balloonInterval;
+        let isGeneratingBalloons = false;
+
         function startBalloons() {
+            isGeneratingBalloons = true;
             balloonInterval = setInterval(() => {
-                balloons.push({
-                    x: Math.random() * cw,
-                    y: ch + 50,
-                    r: Math.random() * 12 + 12,
-                    speed: Math.random() * 1.5 + 1,
-                    alpha: Math.random() * 0.08 + 0.03
-                });
+                if (isGeneratingBalloons) {
+                    balloons.push({
+                        x: Math.random() * cw,
+                        y: ch + 50,
+                        r: Math.random() * 12 + 12,
+                        speed: Math.random() * 1.5 + 1,
+                        alpha: Math.random() * 0.08 + 0.03
+                    });
+                }
             }, 120);
         }
 
@@ -373,27 +391,34 @@
         });
 
         function triggerNextPhase() {
-            // 1. ظهور النص النيوني بالتزامن مع تشغيل التأثيرات
+            // 1. ظهور النص النيوني بالتزامن مع التأثيرات
             neonText.classList.add('show-neon');
             
-            // 2. انطلاق الألعاب النارية والبالونات معاً في نفس اللحظة
+            // 2. تفعيل إطلاق الألعاب النارية والبالونات معاً
             let fwInterval = setInterval(() => {
                 createFirework(cw * (0.2 + Math.random() * 0.6), ch * (0.2 + Math.random() * 0.4));
             }, 600); 
 
             startBalloons();
 
-            // 3. إيقاف البالونات والطراطيع معاً وبشكل مفاجئ بعد 4.5 ثانية
+            // 3. إيقاف توليد البالونات والطراطيع بعد 5 ثوانٍ
             setTimeout(() => {
                 clearInterval(fwInterval);
+                isGeneratingBalloons = false; // التوقف عن توليد بالونات جديدة
                 clearInterval(balloonInterval);
-            }, 4500);
+                
+                // 4. مراقبة انتهاء العناصر تماماً من الشاشة قبل بدء مرحلة التلاشي والرسالة
+                let checkClearInterval = setInterval(() => {
+                    if (fireworks.length === 0 && balloons.length === 0) {
+                        clearInterval(checkClearInterval);
+                        
+                        // تلاشي الكلام والقلب الآن بعد خلو الشاشة تماماً
+                        neonText.classList.add('fade-out-neon');
+                        fadeHeartsActive = true;
+                    }
+                }, 100);
 
-            // 4. اختفاء تدريجي متزامن للقلوب والنص النيوني معاً (يبدأ بعد 5.5 ثانية من البداية)
-            setTimeout(() => {
-                neonText.classList.add('fade-out-neon');
-                fadeHeartsActive = true;
-            }, 5500);
+            }, 5000); // مدة الاحتفالية قبل البدء بالمسح والتلاشي
         }
 
         // ----------------- Typewriter Effect -----------------

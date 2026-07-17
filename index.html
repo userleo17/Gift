@@ -77,8 +77,8 @@
             position: absolute;
             top: 15%;
             text-align: center;
-            transition: opacity 2s ease, transform 2s ease;
-            -webkit-transition: opacity 2s ease, -webkit-transform 2s ease;
+            transition: opacity 1.5s ease, transform 1.5s ease;
+            -webkit-transition: opacity 1.5s ease, -webkit-transform 1.5s ease;
             transform: scale(0.8);
         }
 
@@ -90,7 +90,7 @@
         .fade-out-neon {
             opacity: 0 !important;
             transform: scale(0.9) !important;
-            transition: opacity 2.5s ease, transform 2.5s ease !important;
+            transition: opacity 1.5s ease, transform 1.5s ease !important;
         }
 
         #chatBubble {
@@ -198,6 +198,7 @@
         let fireworks = [];
         let balloons = [];
         let glitters = [];
+        let glittersFadeInActive = false; // التحكم بالظهور التدريجي للمعات الفضية
         
         let lastX = 0;
         let lastY = 0;
@@ -226,15 +227,25 @@
 
             // 1. Draw Grey (Silver) Glitters
             glitters.forEach(g => {
+                // تدرج الظهور عند بدء تفعيله
+                if (glittersFadeInActive && g.currentMaxAlpha < g.targetMaxAlpha) {
+                    g.currentMaxAlpha += 0.005; // سرعة الظهور التدريجي للمعة الخلفية
+                }
+
                 g.alpha += g.alphaChange;
-                if (g.alpha <= 0.1 || g.alpha >= 0.8) g.alphaChange *= -1;
+                if (g.alpha <= 0.02 || g.alpha >= g.currentMaxAlpha) {
+                    g.alphaChange *= -1;
+                }
                 
+                // حصر قيمة الألفا لضمان عدم حدوث وميض حاد
+                let drawAlpha = Math.max(0.01, Math.min(g.alpha, g.currentMaxAlpha));
+
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(g.x, g.y, g.r, 0, Math.PI * 2);
                 ctx.shadowBlur = 6;
                 ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-                ctx.fillStyle = `rgba(200, 205, 215, ${g.alpha})`; 
+                ctx.fillStyle = `rgba(200, 205, 215, ${drawAlpha})`; 
                 ctx.fill();
                 ctx.restore();
             });
@@ -280,7 +291,7 @@
 
                 if (fadeHeartsActive) {
                     if (heartOpacity > 0) {
-                        heartOpacity -= 0.015; 
+                        heartOpacity -= 0.025; 
                     } else {
                         heartOpacity = 0;
                     }
@@ -334,8 +345,11 @@
                 if (b.y < -100) balloons.splice(i, 1);
             }
 
+            // الشرط الذكي: عند انتهاء التوليد، وبمجرد فراغ الشاشة من البالونات تماماً (ينتهون بوقت واحد)
             if (celebrationTimerEnded && !clearScreenTriggered) {
-                if (balloons.length === 0 && fireworks.length === 0) {
+                if (balloons.length === 0) {
+                    // تفريغ أي شرارات ألعاب نارية متبقية لضمان إيقافها فوراً مع آخر بالونة
+                    fireworks = []; 
                     clearScreenTriggered = true;
                     
                     neonText.classList.add('fade-out-neon');
@@ -355,15 +369,18 @@
                     if (!msgTriggered) {
                         msgTriggered = true;
                         neonText.style.display = 'none';
+                        
+                        // إنشاء اللمعات الفضية مهيأة للظهور التدريجي الناعم
                         createSilverGlitter(); 
+                        glittersFadeInActive = true; 
                         
                         setTimeout(() => {
                             chatBubble.classList.add('show-bubble');
                             setTimeout(startTypewriter, 1000);
-                        }, 500);
+                        }, 300);
                     }
                 }
-            }, 100);
+            }, 50);
         }
 
         // ----------------- Helper Functions -----------------
@@ -416,21 +433,25 @@
                     balloons.push({
                         x: Math.random() * cw,
                         y: ch + 50,
-                        r: Math.random() * 12 + 12,
-                        speed: Math.random() * 1.2 + 0.8, 
-                        alpha: Math.random() * 0.08 + 0.03
+                        r: Math.random() * 10 + 10,
+                        speed: Math.random() * 1.3 + 1.0, 
+                        alpha: Math.random() * 0.06 + 0.02
                     });
                 }
-            }, 120);
+            }, 350); 
         }
 
         function createSilverGlitter() {
             for (let i = 0; i < 100; i++) {
+                let targetAlpha = Math.random() * 0.7 + 0.1;
                 glitters.push({
                     x: Math.random() * cw,
                     y: Math.random() * ch,
                     r: Math.random() * 1.5 + 0.6,
-                    alpha: Math.random() * 0.7 + 0.1,
+                    // تبدأ الشفافية من الصفر وتتصاعد تدريجياً
+                    alpha: 0.01, 
+                    currentMaxAlpha: 0.01, 
+                    targetMaxAlpha: targetAlpha,
                     alphaChange: 0.007 * (Math.random() > 0.5 ? 1 : -1)
                 });
             }
@@ -452,16 +473,17 @@
             startSequentialFireworks(); 
             startBalloons(); 
 
+            // يتوقف توليد البالونات والطراطيع معاً بعد 8 ثوانٍ، لنترك ثانيتين لآخر بالونة لتختفي تماماً وتصفى الشاشة
             setTimeout(() => {
                 celebrationActive = false; 
                 clearInterval(balloonInterval); 
                 isGeneratingBalloons = false; 
                 celebrationTimerEnded = true; 
-            }, 7000); 
+            }, 8000); 
         }
 
         // ----------------- Typewriter Effect -----------------
-        const finalMessage = "Happy Birthday, my handsome love 🎂!!\n\nToday is not just any day, it’s the day the most special person in my life was born. I’m so lucky to have you by my side. You are my happiness, my comfort, and the reason behind so many of my smiles.\n\nI hope your birthday is as beautiful as your heart, and I hope this new year of your life brings you endless happiness, success, and everything you dream of .. Thank you for loving me, caring for me, and making my days brighter 😚!\n\nYou mean so much to me, and I’m grateful for every moment we share together. I hope you always know how special you are to me.\n\nI love you so much Yosi 🩷!!";
+        const finalMessage = "Happy Birthday, my handsome love 🎂!!\n\nToday is not just any day, it’s the day the most special person in my life was born. I’m so lucky to have you by my side. You are my happiness, my comfort, and the reason behind so many of my smiles.\n\nI hope your birthday is as beautiful as your heart, and I hope this new year of your life brings you endless happiness, success, and everything you dream of .. Thank you for loving me, caring for me, and making my days brighter 😚!\n\nYou mean so much to me, and I’m grateful for every moment we share together. I hope you always know how special you are to me.\n\nI love you so much yosi 🩷!!";
         
         function startTypewriter() {
             let i = 0;

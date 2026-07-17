@@ -8,7 +8,6 @@
         body {
             margin: 0;
             overflow: hidden;
-            /* التدرج اللوني: أسود فوق، كحلي بالمنتصف، أسود تحت */
             background: linear-gradient(to bottom, #000000 0%, #001845 50%, #000000 100%);
             color: white;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -91,9 +90,9 @@
         .fade-out-neon {
             opacity: 0 !important;
             transform: scale(0.9) !important;
+            transition: opacity 2.5s ease, transform 2.5s ease !important;
         }
 
-        /* تعديل متوافق تماماً مع سفاري لظهور الرسالة بشكل مضمون */
         #chatBubble {
             opacity: 0;
             pointer-events: none; 
@@ -116,10 +115,10 @@
             width: 550px;
             text-align: left;
             line-height: 1.6;
-            font-size: 18px;
+            font-size: 16px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.05);
             position: relative;
-            transition: opacity 2s ease; /* ظهور ناعم للرسالة */
+            transition: opacity 2s ease; 
             -webkit-transition: opacity 2s ease;
             white-space: pre-wrap;
             direction: ltr;
@@ -141,8 +140,8 @@
         }
 
         @media (max-width: 600px) {
-            #neonText { font-size: 1.8rem; }
-            #chatBubble { font-size: 15px; padding: 20px; }
+            #neonText { font-size: 1.6rem; }
+            #chatBubble { font-size: 14px; padding: 18px; }
             #startBtn { padding: 12px 40px; font-size: 20px; }
         }
 
@@ -200,9 +199,12 @@
         let balloons = [];
         let glitters = [];
         
-        // لتخزين آخر مواقع الانفجارات ومنع التكرار في نفس المكان
         let lastX = 0;
         let lastY = 0;
+
+        let celebrationActive = false;
+        let celebrationTimerEnded = false;
+        let clearScreenTriggered = false;
 
         function getHeartPoint(t, scale) {
             const x = 16 * Math.pow(Math.sin(t), 3);
@@ -222,14 +224,19 @@
         function render() {
             ctx.clearRect(0, 0, cw, ch);
 
-            // 1. Draw Glitters
+            // 1. Draw Grey (Silver) Glitters
             glitters.forEach(g => {
                 g.alpha += g.alphaChange;
                 if (g.alpha <= 0.1 || g.alpha >= 0.8) g.alphaChange *= -1;
+                
+                ctx.save();
                 ctx.beginPath();
                 ctx.arc(g.x, g.y, g.r, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 215, 0, ${g.alpha})`; 
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+                ctx.fillStyle = `rgba(200, 205, 215, ${g.alpha})`; 
                 ctx.fill();
+                ctx.restore();
             });
 
             // 2. Draw Hearts
@@ -273,7 +280,7 @@
 
                 if (fadeHeartsActive) {
                     if (heartOpacity > 0) {
-                        heartOpacity -= 0.015; // تلاشي ناعم ومتناسق
+                        heartOpacity -= 0.015; 
                     } else {
                         heartOpacity = 0;
                     }
@@ -327,12 +334,40 @@
                 if (b.y < -100) balloons.splice(i, 1);
             }
 
+            if (celebrationTimerEnded && !clearScreenTriggered) {
+                if (balloons.length === 0 && fireworks.length === 0) {
+                    clearScreenTriggered = true;
+                    
+                    neonText.classList.add('fade-out-neon');
+                    fadeHeartsActive = true;
+
+                    checkHeartFadedInterval();
+                }
+            }
+
             if (isAnimating) requestAnimationFrame(render);
+        }
+
+        function checkHeartFadedInterval() {
+            let check = setInterval(() => {
+                if (heartOpacity <= 0) {
+                    clearInterval(check);
+                    if (!msgTriggered) {
+                        msgTriggered = true;
+                        neonText.style.display = 'none';
+                        createSilverGlitter(); 
+                        
+                        setTimeout(() => {
+                            chatBubble.classList.add('show-bubble');
+                            setTimeout(startTypewriter, 1000);
+                        }, 500);
+                    }
+                }
+            }, 100);
         }
 
         // ----------------- Helper Functions -----------------
 
-        // توليد طراطيع عشوائية بالكامل وبدون تكرار في نفس المكان
         function generateRandomCoords() {
             let nextX, nextY;
             let attempts = 0;
@@ -365,6 +400,12 @@
             }
         }
 
+        function startSequentialFireworks() {
+            if (!celebrationActive) return;
+            createFirework();
+            setTimeout(startSequentialFireworks, 1000);
+        }
+
         let balloonInterval;
         let isGeneratingBalloons = false;
 
@@ -383,14 +424,14 @@
             }, 120);
         }
 
-        function createGlitter() {
+        function createSilverGlitter() {
             for (let i = 0; i < 100; i++) {
                 glitters.push({
                     x: Math.random() * cw,
                     y: Math.random() * ch,
-                    r: Math.random() * 1.5 + 0.5,
-                    alpha: Math.random(),
-                    alphaChange: 0.008 * (Math.random() > 0.5 ? 1 : -1)
+                    r: Math.random() * 1.5 + 0.6,
+                    alpha: Math.random() * 0.7 + 0.1,
+                    alphaChange: 0.007 * (Math.random() > 0.5 ? 1 : -1)
                 });
             }
         }
@@ -405,45 +446,22 @@
         });
 
         function triggerNextPhase() {
-            // 1. ظهور النص النيوني
             neonText.classList.add('show-neon');
             
-            // 2. انطلاق الطراطيع العشوائية والبالونات
-            let fwInterval = setInterval(() => {
-                createFirework();
-            }, 700); 
+            celebrationActive = true;
+            startSequentialFireworks(); 
+            startBalloons(); 
 
-            startBalloons();
-
-            // 3. التحكم بنعومة الحركة عند النهاية (بعد 6.5 ثوانٍ)
             setTimeout(() => {
-                clearInterval(fwInterval); // إيقاف توليد الطراطيع (الموجودة ستتلاشى طبيعياً بسلاسة فائقة)
-                clearInterval(balloonInterval); // إيقاف توليد البالونات
-                isGeneratingBalloons = false; // السماح للبالونات بالاستمرار في الصعود للأعلى
-
-                // 4. تلاشي تدريجي للقلب والكلام النيوني وبدء إظهار الرسالة
-                setTimeout(() => {
-                    neonText.classList.add('fade-out-neon');
-                    fadeHeartsActive = true;
-
-                    // إظهار الرسالة وبدء تأثير الكتابة فور تلاشي القلوب وبأمان تام على سفاري
-                    setTimeout(() => {
-                        if (!msgTriggered) {
-                            msgTriggered = true;
-                            neonText.style.display = 'none';
-                            createGlitter();
-                            chatBubble.classList.add('show-bubble'); // إظهار الفقاعة بتأثير CSS ناعم ومضمون
-                            setTimeout(startTypewriter, 1000); 
-                        }
-                    }, 1500);
-
-                }, 4000); // إعطاء البالونات والطراطيع وقتاً للابتعاد والتلاشي
-
-            }, 6500); 
+                celebrationActive = false; 
+                clearInterval(balloonInterval); 
+                isGeneratingBalloons = false; 
+                celebrationTimerEnded = true; 
+            }, 7000); 
         }
 
         // ----------------- Typewriter Effect -----------------
-        const finalMessage = "Happy birthday to the person who makes every day brighter 🎉 ...\n\nThank you for being my safe place, my supporter, and the kindest person ever ..\n\nI hope this year brings you as much happiness as you bring into my \nlife ... I love you much yosi 🩷!";
+        const finalMessage = "Happy Birthday, my handsome love 🎂!!\n\nToday is not just any day, it’s the day the most special person in my life was born. I’m so lucky to have you by my side. You are my happiness, my comfort, and the reason behind so many of my smiles.\n\nI hope your birthday is as beautiful as your heart, and I hope this new year of your life brings you endless happiness, success, and everything you dream of .. Thank you for loving me, caring for me, and making my days brighter 😚!\n\nYou mean so much to me, and I’m grateful for every moment we share together. I hope you always know how special you are to me.\n\nI love you so much Yosi 🩷!!";
         
         function startTypewriter() {
             let i = 0;
@@ -453,7 +471,7 @@
                 if (i < finalMessage.length) {
                     chatBubble.innerHTML += finalMessage.charAt(i);
                     i++;
-                    let speed = Math.random() * 60 + 60; 
+                    let speed = Math.random() * 40 + 40; 
                     setTimeout(type, speed);
                 }
             }

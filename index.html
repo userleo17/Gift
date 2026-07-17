@@ -5,72 +5,415 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Happy Birthday Yosi</title>
     <style>
-        body { margin: 0; overflow: hidden; background: linear-gradient(to bottom, #000000 0%, #001845 50%, #000000 100%); color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; height: -webkit-fill-available; }
-        #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-        .ui-layer { position: absolute; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; pointer-events: none; padding: 20px; }
-        #startBtn { pointer-events: auto; padding: 15px 50px; font-size: 24px; font-weight: bold; color: #fff; background: transparent; border: 2px solid #ff4d94; border-radius: 50px; cursor: pointer; box-shadow: 0 0 15px #ff4d94, inset 0 0 15px #ff4d94; text-shadow: 0 0 5px #ff4d94; transition: all 0.3s ease; -webkit-appearance: none; }
-        #startBtn:hover { background: #ff4d94; box-shadow: 0 0 30px #ff4d94; transform: scale(1.05); }
-        #neonText { font-size: 2.5rem; font-weight: bold; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px #ff0055, 0 0 30px #ff0055; opacity: 0; position: absolute; top: 15%; transition: opacity 1s, transform 1s, filter 1s; transform: scale(0.8); }
-        .show-neon { opacity: 1 !important; transform: scale(1) !important; }
-        .explode-text { transform: scale(2) !important; opacity: 0 !important; filter: blur(15px) !important; }
-        #chatBubble { opacity: 0; background: rgba(20, 20, 20, 0.75); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 30px; border-radius: 20px; max-width: 90%; width: 550px; line-height: 1.8; font-size: 19px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); pointer-events: auto; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            /* التدرج اللوني: أسود فوق، كحلي بالمنتصف، أسود تحت */
+            background: linear-gradient(to bottom, #000000 0%, #001845 50%, #000000 100%);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            height: -webkit-fill-available; 
+        }
+
+        html {
+            height: -webkit-fill-available;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .ui-layer {
+            position: absolute;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            box-sizing: border-box;
+            padding: 20px;
+        }
+
+        #startBtn {
+            pointer-events: auto;
+            padding: 15px 50px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            background: transparent;
+            border: 2px solid #ff4d94;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 15px #ff4d94, inset 0 0 15px #ff4d94;
+            text-shadow: 0 0 5px #ff4d94;
+            transition: all 0.3s ease;
+            -webkit-appearance: none;
+        }
+
+        #startBtn:hover {
+            background: #ff4d94;
+            box-shadow: 0 0 30px #ff4d94, inset 0 0 30px #ff4d94;
+            transform: scale(1.05);
+        }
+
+        #neonText {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px #fff, 0 0 20px #ff0055, 0 0 30px #ff0055;
+            opacity: 0;
+            position: absolute;
+            top: 15%;
+            text-align: center;
+            transition: opacity 1.5s ease, transform 1.5s ease;
+            -webkit-transition: opacity 1.5s ease, -webkit-transform 1.5s ease;
+            transform: scale(0.8);
+        }
+
+        .show-neon {
+            opacity: 1 !important;
+            transform: scale(1) !important;
+        }
+
+        .fade-out-neon {
+            opacity: 0 !important;
+            transform: scale(0.9) !important;
+            transition: opacity 2s ease, transform 2s ease !important;
+        }
+
+        /* تعديل تصميم فقاعة الدردشة لإضافة خلفية اللمعة الرصاصية المتحركة */
+        #chatBubble {
+            opacity: 0;
+            /* خلفية بتدرج رصاصي منساب */
+            background: linear-gradient(
+                120deg, 
+                rgba(30, 30, 30, 0.85) 30%, 
+                rgba(180, 180, 180, 0.25) 40%, 
+                rgba(180, 180, 180, 0.25) 60%, 
+                rgba(30, 30, 30, 0.85) 70%
+            );
+            background-size: 200% 100%;
+            animation: silverSheen 4s linear infinite;
+            -webkit-backdrop-filter: blur(12px); 
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 25px 30px;
+            border-radius: 20px;
+            max-width: 90%;
+            width: 550px;
+            text-align: left;
+            line-height: 1.6;
+            font-size: 18px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.05);
+            position: relative;
+            transition: opacity 2s ease;
+            white-space: pre-wrap;
+            pointer-events: auto;
+            direction: ltr;
+            box-sizing: border-box;
+        }
+
+        /* أنيميشن تحريك اللمعة الرصاصية */
+        @keyframes silverSheen {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        @media (max-width: 600px) {
+            #neonText { font-size: 1.8rem; }
+            #chatBubble { font-size: 15px; padding: 20px; }
+            #startBtn { padding: 12px 40px; font-size: 20px; }
+        }
+
+        #chatBubble::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 15px 15px 0;
+            border-style: solid;
+            border-color: rgba(30, 30, 30, 0.85) transparent transparent transparent;
+        }
     </style>
 </head>
 <body>
+
     <canvas id="canvas"></canvas>
+
     <div class="ui-layer">
         <button id="startBtn">Click Me</button>
         <div id="neonText">Happy Birthday To Yosi 🎉</div>
         <div id="chatBubble"></div>
     </div>
+
     <script>
-        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d'), startBtn = document.getElementById('startBtn'), neonText = document.getElementById('neonText'), chatBubble = document.getElementById('chatBubble');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const neonText = document.getElementById('neonText');
+        const chatBubble = document.getElementById('chatBubble');
+
         let cw, ch;
-        function resize() { cw = canvas.width = window.innerWidth; ch = canvas.height = window.innerHeight; }
-        window.addEventListener('resize', resize); resize();
+        function resize() {
+            cw = canvas.width = window.innerWidth;
+            ch = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+        resize();
 
-        let isAnimating = false, heartScales = [4, 6.5, 9], heartPaths = [], heartProgress = [0, 0, 0], currentHeartDraw = 0, heartOpacity = 1, drawHeartsActive = false, fadeHeartsActive = false, msgTriggered = false;
-        let fireworks = [], balloons = [], glitters = [];
+        // ----------------- State & Engine -----------------
+        let isAnimating = false;
+        
+        const heartScales = [9, 6.5, 4];
+        const heartPaths = [];
+        const heartProgress = [0, 0, 0];
+        let currentHeartDraw = 0;
+        let heartOpacity = 1;
+        let drawHeartsActive = false;
+        let fadeHeartsActive = false;
+        let msgTriggered = false; 
 
-        function getHeartPoint(t, scale) { const x = 16 * Math.pow(Math.sin(t), 3); const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)); return { x: x * scale, y: y * scale }; }
-        for (let s of heartScales) { let pts = []; for (let t = 0; t <= Math.PI * 2 + 0.1; t += 0.05) pts.push(getHeartPoint(t, s)); heartPaths.push(pts); }
+        let fireworks = [];
+        let balloons = [];
+        let glitters = [];
 
+        function getHeartPoint(t, scale) {
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+            return { x: x * scale, y: y * scale };
+        }
+
+        for (let s of heartScales) {
+            let pts = [];
+            for (let t = 0; t <= Math.PI * 2 + 0.1; t += 0.05) {
+                pts.push(getHeartPoint(t, s));
+            }
+            heartPaths.push(pts);
+        }
+
+        // ----------------- Animation Loop -----------------
         function render() {
             ctx.clearRect(0, 0, cw, ch);
-            glitters.forEach(g => { g.alpha += g.alphaChange; if (g.alpha <= 0.1 || g.alpha >= 0.8) g.alphaChange *= -1; ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(255, 215, 0, ${g.alpha})`; ctx.fill(); });
-            
+
+            // 1. Draw Glitters
+            glitters.forEach(g => {
+                g.alpha += g.alphaChange;
+                if (g.alpha <= 0.1 || g.alpha >= 0.8) g.alphaChange *= -1;
+                ctx.beginPath();
+                ctx.arc(g.x, g.y, g.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 215, 0, ${g.alpha})`; 
+                ctx.fill();
+            });
+
+            // 2. Draw Hearts
             if (drawHeartsActive || heartOpacity > 0) {
-                ctx.save(); ctx.translate(cw / 2, ch / 2 + 10);
+                ctx.save();
+                ctx.translate(cw / 2, ch / 2 + 10); 
+                
                 for (let i = 0; i < 3; i++) {
                     if (heartProgress[i] > 0) {
-                        ctx.beginPath(); ctx.moveTo(heartPaths[i][0].x, heartPaths[i][0].y);
+                        ctx.beginPath();
+                        ctx.moveTo(heartPaths[i][0].x, heartPaths[i][0].y);
+                        
                         let limit = Math.min(Math.floor(heartProgress[i]), heartPaths[i].length - 1);
-                        for (let j = 1; j <= limit; j++) ctx.lineTo(heartPaths[i][j].x, heartPaths[i][j].y);
-                        ctx.strokeStyle = `rgba(255, 77, 148, ${heartOpacity})`; ctx.lineWidth = 3.5; ctx.lineCap = "round"; ctx.stroke();
+                        
+                        for (let j = 1; j <= limit; j++) {
+                            ctx.lineTo(heartPaths[i][j].x, heartPaths[i][j].y);
+                        }
+                        ctx.strokeStyle = `rgba(255, 77, 148, ${heartOpacity})`;
+                        ctx.lineWidth = 3.5;
+                        ctx.lineCap = "round";
+                        ctx.lineJoin = "round";
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = "#ff4d94";
+                        ctx.stroke();
                     }
                 }
                 ctx.restore();
+
                 if (drawHeartsActive) {
-                    heartProgress[currentHeartDraw] += 0.25; 
-                    if (heartProgress[currentHeartDraw] >= heartPaths[currentHeartDraw].length) { currentHeartDraw++; if(currentHeartDraw >= 3) { drawHeartsActive = false; triggerCleanup(); } }
+                    if (currentHeartDraw < 3) {
+                        heartProgress[currentHeartDraw] += 0.08; // رسم بطيء جداً ليأخذ حوالي 9 ثوانٍ للقلوب الثلاثة
+                        if (heartProgress[currentHeartDraw] >= heartPaths[currentHeartDraw].length) {
+                            currentHeartDraw++;
+                        }
+                    } else {
+                        drawHeartsActive = false; 
+                        triggerNextPhase();
+                    }
                 }
-                if (fadeHeartsActive) { heartOpacity -= 0.005; if(heartOpacity <= 0 && !msgTriggered) { msgTriggered = true; neonText.style.display = 'none'; createGlitter(); chatBubble.style.opacity = '1'; startTypewriter(); } }
+
+                if (fadeHeartsActive) {
+                    if (heartOpacity > 0) {
+                        heartOpacity -= 0.008; // سرعة التلاشي لتتزامن مع تلاشي النص النيوني
+                    } else {
+                        heartOpacity = 0;
+                        if (!msgTriggered) {
+                            msgTriggered = true;
+                            setTimeout(() => {
+                                neonText.style.display = 'none'; 
+                                createGlitter();
+                                chatBubble.style.opacity = '1';
+                                startTypewriter();
+                            }, 500); // إظهار الرسالة مباشرة بعد انتهاء تلاشي العناصر
+                        }
+                    }
+                }
             }
-            fireworks.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.alpha -= 0.015; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(${p.color}, ${p.alpha})`; ctx.fill(); if(p.alpha <= 0) fireworks.splice(i, 1); });
-            balloons.forEach((b, i) => { b.y -= b.speed; ctx.save(); ctx.translate(b.x, b.y); ctx.scale(1, 1.25); ctx.beginPath(); ctx.arc(0, 0, b.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(255, 255, 255, ${b.alpha})`; ctx.fill(); ctx.restore(); if(b.y < -100) balloons.splice(i, 1); });
+
+            // 3. Draw Fireworks
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                let p = fireworks[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.06;
+                p.alpha -= 0.015;
+                
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${p.color}, ${p.alpha})`;
+                ctx.fill();
+
+                if (p.alpha <= 0) fireworks.splice(i, 1);
+            }
+
+            // 4. Draw Balloons
+            for (let i = balloons.length - 1; i >= 0; i--) {
+                let b = balloons[i];
+                b.y -= b.speed;
+                
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                ctx.scale(1, 1.25);
+                ctx.beginPath();
+                ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${b.alpha})`;
+                ctx.fill();
+                ctx.restore();
+                
+                ctx.beginPath();
+                ctx.moveTo(b.x, b.y + b.r * 1.25);
+                ctx.lineTo(b.x, b.y + b.r * 2.5);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${b.alpha * 0.4})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                if (b.y < -100) balloons.splice(i, 1);
+            }
+
             if (isAnimating) requestAnimationFrame(render);
         }
 
-        function createFirework(x, y) { for (let i = 0; i < 50; i++) { let a = Math.random()*Math.PI*2, s = Math.random()*4+1; fireworks.push({x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, r: Math.random()*2+1, alpha: 1, color: '255, 77, 148'}); } }
-        function createGlitter() { for (let i = 0; i < 150; i++) glitters.push({x: Math.random()*cw, y: Math.random()*ch, r: Math.random()*1.5+0.5, alpha: Math.random(), alphaChange: 0.008 * (Math.random() > 0.5 ? 1 : -1)}); }
-        
-        startBtn.addEventListener('click', () => { startBtn.style.display = 'none'; isAnimating = true; drawHeartsActive = true; neonText.classList.add('show-neon'); let fw = setInterval(() => createFirework(Math.random()*cw, Math.random()*ch/2), 800); let bl = setInterval(() => balloons.push({x: Math.random()*cw, y: ch+50, r: 15, speed: 2, alpha: 0.05}), 150); setTimeout(() => { clearInterval(fw); clearInterval(bl); }, 19000); render(); });
+        // ----------------- Helper Functions -----------------
 
-        function triggerCleanup() { setTimeout(() => { neonText.classList.add('explode-text'); fadeHeartsActive = true; }, 1000); }
-        function startTypewriter() {
-            const msg = "Happy birthday to the person who makes every day brighter 🎉 ...\n\nThank you for being my safe place, my supporter, and the kindest person ever ..\n\nI hope this year brings you as much happiness as you bring into my \nlife ... I love you much yosi 🩷!";
-            let i = 0; function type() { if(i < msg.length) { chatBubble.innerHTML += msg.charAt(i); i++; setTimeout(type, 70); } } type();
+        function createFirework(x, y) {
+            const colors = ['255, 77, 148', '255, 204, 0', '0, 255, 255', '255, 255, 255'];
+            for (let i = 0; i < 70; i++) {
+                let angle = Math.random() * Math.PI * 2;
+                let speed = Math.random() * 5 + 2;
+                fireworks.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    r: Math.random() * 2 + 1,
+                    alpha: 1,
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                });
+            }
         }
+
+        let balloonInterval;
+        function startBalloons() {
+            balloonInterval = setInterval(() => {
+                balloons.push({
+                    x: Math.random() * cw,
+                    y: ch + 50,
+                    r: Math.random() * 12 + 12,
+                    speed: Math.random() * 1.5 + 1,
+                    alpha: Math.random() * 0.08 + 0.03
+                });
+            }, 120);
+        }
+
+        function createGlitter() {
+            for (let i = 0; i < 100; i++) {
+                glitters.push({
+                    x: Math.random() * cw,
+                    y: Math.random() * ch,
+                    r: Math.random() * 1.5 + 0.5,
+                    alpha: Math.random(),
+                    alphaChange: 0.008 * (Math.random() > 0.5 ? 1 : -1)
+                });
+            }
+        }
+
+        // ----------------- Main Timeline -----------------
+        
+        startBtn.addEventListener('click', () => {
+            startBtn.style.display = 'none';
+            isAnimating = true;
+            drawHeartsActive = true;
+            render();
+        });
+
+        function triggerNextPhase() {
+            // 1. ظهور النص النيوني بالتزامن مع تشغيل التأثيرات
+            neonText.classList.add('show-neon');
+            
+            // 2. انطلاق الألعاب النارية والبالونات معاً في نفس اللحظة
+            let fwInterval = setInterval(() => {
+                createFirework(cw * (0.2 + Math.random() * 0.6), ch * (0.2 + Math.random() * 0.4));
+            }, 600); 
+
+            startBalloons();
+
+            // 3. إيقاف البالونات والطراطيع معاً وبشكل مفاجئ بعد 4.5 ثانية
+            setTimeout(() => {
+                clearInterval(fwInterval);
+                clearInterval(balloonInterval);
+            }, 4500);
+
+            // 4. اختفاء تدريجي متزامن للقلوب والنص النيوني معاً (يبدأ بعد 5.5 ثانية من البداية)
+            setTimeout(() => {
+                neonText.classList.add('fade-out-neon');
+                fadeHeartsActive = true;
+            }, 5500);
+        }
+
+        // ----------------- Typewriter Effect -----------------
+        const finalMessage = "Happy birthday to the person who makes every day brighter 🎉 ...\n\nThank you for being my safe place, my supporter, and the kindest person ever ..\n\nI hope this year brings you as much happiness as you bring into my \nlife ... I love you much yosi 🩷!";
+        
+        function startTypewriter() {
+            let i = 0;
+            chatBubble.innerHTML = '';
+            
+            function type() {
+                if (i < finalMessage.length) {
+                    chatBubble.innerHTML += finalMessage.charAt(i);
+                    i++;
+                    let speed = Math.random() * 60 + 60; 
+                    setTimeout(type, speed);
+                }
+            }
+            type();
+        }
+
     </script>
 </body>
 </html>

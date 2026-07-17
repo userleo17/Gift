@@ -93,10 +93,10 @@
             transform: scale(0.9) !important;
         }
 
-        /* تعديل متوافق تماماً مع سفاري للظهور السلس للرسالة دون مشاكل */
+        /* تعديل متوافق تماماً مع سفاري لظهور الرسالة بشكل مضمون */
         #chatBubble {
             opacity: 0;
-            pointer-events: none; /* يمنع التفاعل وهي مخفية */
+            pointer-events: none; 
             background: linear-gradient(
                 120deg, 
                 rgba(30, 30, 30, 0.85) 30%, 
@@ -119,14 +119,13 @@
             font-size: 18px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.05);
             position: relative;
-            transition: opacity 2.5s ease; /* ظهور تدريجي ناعم جداً */
-            -webkit-transition: opacity 2.5s ease;
+            transition: opacity 2s ease; /* ظهور ناعم للرسالة */
+            -webkit-transition: opacity 2s ease;
             white-space: pre-wrap;
             direction: ltr;
             box-sizing: border-box;
         }
 
-        /* الكلاس المسؤول عن تفعيل ظهور الرسالة */
         .show-bubble {
             opacity: 1 !important;
             pointer-events: auto !important;
@@ -200,6 +199,10 @@
         let fireworks = [];
         let balloons = [];
         let glitters = [];
+        
+        // لتخزين آخر مواقع الانفجارات ومنع التكرار في نفس المكان
+        let lastX = 0;
+        let lastY = 0;
 
         function getHeartPoint(t, scale) {
             const x = 16 * Math.pow(Math.sin(t), 3);
@@ -270,40 +273,27 @@
 
                 if (fadeHeartsActive) {
                     if (heartOpacity > 0) {
-                        heartOpacity -= 0.006; // تلاشي ناعم وبطيء جداً للقلوب
+                        heartOpacity -= 0.015; // تلاشي ناعم ومتناسق
                     } else {
                         heartOpacity = 0;
-                        if (!msgTriggered) {
-                            msgTriggered = true;
-                            setTimeout(() => {
-                                neonText.style.display = 'none'; 
-                                createGlitter();
-                                chatBubble.classList.add('show-bubble'); // تفعيل الظهور الآمن والناعم للرسالة
-                                setTimeout(startTypewriter, 1000); // الانتظار ثانية حتى اكتمال ظهور الفقاعة ثم بدء الكتابة
-                            }, 500);
-                        }
                     }
                 }
             }
 
-            // 3. Draw Fireworks (تأثير متوهج، سلس وبطيء)
+            // 3. Draw Fireworks
             for (let i = fireworks.length - 1; i >= 0; i--) {
                 let p = fireworks[i];
                 
-                // إضافة احتكاك هواء لجعل جزيئات الطراطيع تتباطأ بسلاسة
                 p.vx *= 0.95; 
                 p.vy *= 0.95;
-                p.vy += 0.03; // جاذبية خفيفة جداً لتأثير طفو ناعم
-                
+                p.vy += 0.03; 
                 p.x += p.vx;
                 p.y += p.vy;
-                p.alpha -= 0.007; // معدل تلاشي أبطأ لتصبح شفافة ببطء
+                p.alpha -= 0.007; 
                 
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                
-                // تأثير التوهج اللامع للشرارات
                 ctx.shadowBlur = 10;
                 ctx.shadowColor = `rgba(${p.color}, ${p.alpha})`;
                 ctx.fillStyle = `rgba(${p.color}, ${p.alpha})`;
@@ -342,14 +332,30 @@
 
         // ----------------- Helper Functions -----------------
 
-        function createFirework(x, y) {
+        // توليد طراطيع عشوائية بالكامل وبدون تكرار في نفس المكان
+        function generateRandomCoords() {
+            let nextX, nextY;
+            let attempts = 0;
+            do {
+                nextX = cw * (0.15 + Math.random() * 0.7);
+                nextY = ch * (0.15 + Math.random() * 0.45);
+                attempts++;
+            } while (Math.abs(nextX - lastX) < cw * 0.15 && Math.abs(nextY - lastY) < ch * 0.15 && attempts < 10);
+            
+            lastX = nextX;
+            lastY = nextY;
+            return { x: nextX, y: nextY };
+        }
+
+        function createFirework() {
+            const coords = generateRandomCoords();
             const colors = ['255, 77, 148', '255, 204, 0', '0, 255, 255', '255, 255, 255'];
             for (let i = 0; i < 75; i++) {
                 let angle = Math.random() * Math.PI * 2;
                 let speed = Math.random() * 6 + 1.5;
                 fireworks.push({
-                    x: x,
-                    y: y,
+                    x: coords.x,
+                    y: coords.y,
                     vx: Math.cos(angle) * speed,
                     vy: Math.sin(angle) * speed,
                     r: Math.random() * 2 + 1,
@@ -370,7 +376,7 @@
                         x: Math.random() * cw,
                         y: ch + 50,
                         r: Math.random() * 12 + 12,
-                        speed: Math.random() * 1.2 + 0.8, // بالونات أبطأ وأكثر سلاسة
+                        speed: Math.random() * 1.2 + 0.8, 
                         alpha: Math.random() * 0.08 + 0.03
                     });
                 }
@@ -399,29 +405,41 @@
         });
 
         function triggerNextPhase() {
-            // 1. ظهور النص النيوني بنعومة وسلاسة
+            // 1. ظهور النص النيوني
             neonText.classList.add('show-neon');
             
-            // 2. تفعيل توليد الطراطيع والبالونات معاً بالتوازي
+            // 2. انطلاق الطراطيع العشوائية والبالونات
             let fwInterval = setInterval(() => {
-                createFirework(cw * (0.2 + Math.random() * 0.6), ch * (0.2 + Math.random() * 0.4));
-            }, 600); 
+                createFirework();
+            }, 700); 
 
             startBalloons();
 
-            // 3. التوقف التدريجي والناعم بعد 6 ثوانٍ من الاحتفال
+            // 3. التحكم بنعومة الحركة عند النهاية (بعد 6.5 ثوانٍ)
             setTimeout(() => {
-                clearInterval(fwInterval); // توقف توليد طراطيع جديدة، الحالية ستتلاشى طبيعياً
-                clearInterval(balloonInterval); // توقف توليد بالونات جديدة
-                isGeneratingBalloons = false; // السماح للبالونات الموجودة بالصعود والخروج من الشاشة تماماً
-                
-                // 4. ننتظر حتى تخرج البالونات وتتلاشى الطراطيع تماماً، ثم نختفي بنعومة مطلقة
-                setTimeout(() => {
-                    neonText.classList.add('fade-out-neon'); // تلاشي سلس للكلام عبر الـ CSS
-                    fadeHeartsActive = true; // تلاشي سلس للقلوب عبر الـ Canvas
-                }, 5500); // 5.5 ثانية تضمن صعود البالونات بالكامل للأعلى وتلاشي الطراطيع
+                clearInterval(fwInterval); // إيقاف توليد الطراطيع (الموجودة ستتلاشى طبيعياً بسلاسة فائقة)
+                clearInterval(balloonInterval); // إيقاف توليد البالونات
+                isGeneratingBalloons = false; // السماح للبالونات بالاستمرار في الصعود للأعلى
 
-            }, 6000); 
+                // 4. تلاشي تدريجي للقلب والكلام النيوني وبدء إظهار الرسالة
+                setTimeout(() => {
+                    neonText.classList.add('fade-out-neon');
+                    fadeHeartsActive = true;
+
+                    // إظهار الرسالة وبدء تأثير الكتابة فور تلاشي القلوب وبأمان تام على سفاري
+                    setTimeout(() => {
+                        if (!msgTriggered) {
+                            msgTriggered = true;
+                            neonText.style.display = 'none';
+                            createGlitter();
+                            chatBubble.classList.add('show-bubble'); // إظهار الفقاعة بتأثير CSS ناعم ومضمون
+                            setTimeout(startTypewriter, 1000); 
+                        }
+                    }, 1500);
+
+                }, 4000); // إعطاء البالونات والطراطيع وقتاً للابتعاد والتلاشي
+
+            }, 6500); 
         }
 
         // ----------------- Typewriter Effect -----------------

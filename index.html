@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Happy Birthday Yosi</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: linear-gradient(to bottom, #000000 0%, #001845 50%, #000000 100%); color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; height: -webkit-fill-available; }
+        #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .ui-layer { position: absolute; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; pointer-events: none; padding: 20px; }
+        #startBtn { pointer-events: auto; padding: 15px 50px; font-size: 24px; font-weight: bold; color: #fff; background: transparent; border: 2px solid #ff4d94; border-radius: 50px; cursor: pointer; box-shadow: 0 0 15px #ff4d94, inset 0 0 15px #ff4d94; text-shadow: 0 0 5px #ff4d94; transition: all 0.3s ease; -webkit-appearance: none; }
+        #startBtn:hover { background: #ff4d94; box-shadow: 0 0 30px #ff4d94; transform: scale(1.05); }
+        #neonText { font-size: 2.5rem; font-weight: bold; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px #ff0055, 0 0 30px #ff0055; opacity: 0; position: absolute; top: 15%; transition: opacity 1s, transform 1s, filter 1s; transform: scale(0.8); }
+        .show-neon { opacity: 1 !important; transform: scale(1) !important; }
+        .explode-text { transform: scale(2) !important; opacity: 0 !important; filter: blur(15px) !important; }
+        #chatBubble { opacity: 0; background: rgba(20, 20, 20, 0.75); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 30px; border-radius: 20px; max-width: 90%; width: 550px; line-height: 1.8; font-size: 19px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); pointer-events: auto; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="ui-layer">
+        <button id="startBtn">Click Me</button>
+        <div id="neonText">Happy Birthday To Yosi 🎉</div>
+        <div id="chatBubble"></div>
+    </div>
+    <script>
+        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d'), startBtn = document.getElementById('startBtn'), neonText = document.getElementById('neonText'), chatBubble = document.getElementById('chatBubble');
+        let cw, ch;
+        function resize() { cw = canvas.width = window.innerWidth; ch = canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+
+        let isAnimating = false, heartScales = [4, 6.5, 9], heartPaths = [], heartProgress = [0, 0, 0], currentHeartDraw = 0, heartOpacity = 1, drawHeartsActive = false, fadeHeartsActive = false, msgTriggered = false;
+        let fireworks = [], balloons = [], glitters = [];
+
+        function getHeartPoint(t, scale) { const x = 16 * Math.pow(Math.sin(t), 3); const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)); return { x: x * scale, y: y * scale }; }
+        for (let s of heartScales) { let pts = []; for (let t = 0; t <= Math.PI * 2 + 0.1; t += 0.05) pts.push(getHeartPoint(t, s)); heartPaths.push(pts); }
+
+        function render() {
+            ctx.clearRect(0, 0, cw, ch);
+            glitters.forEach(g => { g.alpha += g.alphaChange; if (g.alpha <= 0.1 || g.alpha >= 0.8) g.alphaChange *= -1; ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(255, 215, 0, ${g.alpha})`; ctx.fill(); });
+            
+            if (drawHeartsActive || heartOpacity > 0) {
+                ctx.save(); ctx.translate(cw / 2, ch / 2 + 10);
+                for (let i = 0; i < 3; i++) {
+                    if (heartProgress[i] > 0) {
+                        ctx.beginPath(); ctx.moveTo(heartPaths[i][0].x, heartPaths[i][0].y);
+                        let limit = Math.min(Math.floor(heartProgress[i]), heartPaths[i].length - 1);
+                        for (let j = 1; j <= limit; j++) ctx.lineTo(heartPaths[i][j].x, heartPaths[i][j].y);
+                        ctx.strokeStyle = `rgba(255, 77, 148, ${heartOpacity})`; ctx.lineWidth = 3.5; ctx.lineCap = "round"; ctx.stroke();
+                    }
+                }
+                ctx.restore();
+                if (drawHeartsActive) {
+                    heartProgress[currentHeartDraw] += 0.25; 
+                    if (heartProgress[currentHeartDraw] >= heartPaths[currentHeartDraw].length) { currentHeartDraw++; if(currentHeartDraw >= 3) { drawHeartsActive = false; triggerCleanup(); } }
+                }
+                if (fadeHeartsActive) { heartOpacity -= 0.005; if(heartOpacity <= 0 && !msgTriggered) { msgTriggered = true; neonText.style.display = 'none'; createGlitter(); chatBubble.style.opacity = '1'; startTypewriter(); } }
+            }
+            fireworks.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.alpha -= 0.015; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(${p.color}, ${p.alpha})`; ctx.fill(); if(p.alpha <= 0) fireworks.splice(i, 1); });
+            balloons.forEach((b, i) => { b.y -= b.speed; ctx.save(); ctx.translate(b.x, b.y); ctx.scale(1, 1.25); ctx.beginPath(); ctx.arc(0, 0, b.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(255, 255, 255, ${b.alpha})`; ctx.fill(); ctx.restore(); if(b.y < -100) balloons.splice(i, 1); });
+            if (isAnimating) requestAnimationFrame(render);
+        }
+
+        function createFirework(x, y) { for (let i = 0; i < 50; i++) { let a = Math.random()*Math.PI*2, s = Math.random()*4+1; fireworks.push({x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, r: Math.random()*2+1, alpha: 1, color: '255, 77, 148'}); } }
+        function createGlitter() { for (let i = 0; i < 150; i++) glitters.push({x: Math.random()*cw, y: Math.random()*ch, r: Math.random()*1.5+0.5, alpha: Math.random(), alphaChange: 0.008 * (Math.random() > 0.5 ? 1 : -1)}); }
+        
+        startBtn.addEventListener('click', () => { startBtn.style.display = 'none'; isAnimating = true; drawHeartsActive = true; neonText.classList.add('show-neon'); let fw = setInterval(() => createFirework(Math.random()*cw, Math.random()*ch/2), 800); let bl = setInterval(() => balloons.push({x: Math.random()*cw, y: ch+50, r: 15, speed: 2, alpha: 0.05}), 150); setTimeout(() => { clearInterval(fw); clearInterval(bl); }, 19000); render(); });
+
+        function triggerCleanup() { setTimeout(() => { neonText.classList.add('explode-text'); fadeHeartsActive = true; }, 1000); }
+        function startTypewriter() {
+            const msg = "Happy birthday to the person who makes every day brighter 🎉 ...\n\nThank you for being my safe place, my supporter, and the kindest person ever ..\n\nI hope this year brings you as much happiness as you bring into my \nlife ... I love you much yosi 🩷!";
+            let i = 0; function type() { if(i < msg.length) { chatBubble.innerHTML += msg.charAt(i); i++; setTimeout(type, 70); } } type();
+        }
+    </script>
+</body>
+</html>

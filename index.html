@@ -198,7 +198,8 @@
         let fireworks = [];
         let balloons = [];
         let glitters = [];
-        let glittersFadeInActive = false; // التحكم بالظهور التدريجي للمعات الفضية
+        let glittersFadeInActive = false; 
+        let glittersOverallAlpha = 0; // تحكم ناعم بالظهور التدريجي لجميع اللمعات معاً
         
         let lastX = 0;
         let lastY = 0;
@@ -226,19 +227,19 @@
             ctx.clearRect(0, 0, cw, ch);
 
             // 1. Draw Grey (Silver) Glitters
-            glitters.forEach(g => {
-                // تدرج الظهور عند بدء تفعيله
-                if (glittersFadeInActive && g.currentMaxAlpha < g.targetMaxAlpha) {
-                    g.currentMaxAlpha += 0.005; // سرعة الظهور التدريجي للمعة الخلفية
-                }
+            if (glittersFadeInActive && glittersOverallAlpha < 1) {
+                glittersOverallAlpha += 0.01; // ظهور ناعم وتدريجي بالملي على مدار ثانيتين تقريباً
+            }
 
+            glitters.forEach(g => {
                 g.alpha += g.alphaChange;
-                if (g.alpha <= 0.02 || g.alpha >= g.currentMaxAlpha) {
+                if (g.alpha <= 0.05 || g.alpha >= g.maxAlpha) {
                     g.alphaChange *= -1;
                 }
-                
-                // حصر قيمة الألفا لضمان عدم حدوث وميض حاد
-                let drawAlpha = Math.max(0.01, Math.min(g.alpha, g.currentMaxAlpha));
+                g.alpha = Math.max(0.05, Math.min(g.alpha, g.maxAlpha));
+
+                // ضرب حركة الوميض الطبيعية في نسبة الظهور العام للمجموعة
+                let drawAlpha = g.alpha * glittersOverallAlpha;
 
                 ctx.save();
                 ctx.beginPath();
@@ -345,11 +346,10 @@
                 if (b.y < -100) balloons.splice(i, 1);
             }
 
-            // الشرط الذكي: عند انتهاء التوليد، وبمجرد فراغ الشاشة من البالونات تماماً (ينتهون بوقت واحد)
+            // عند انتهاء التوليد، وبمجرد فراغ الشاشة من البالونات تماماً (يتوقف كل شيء معها)
             if (celebrationTimerEnded && !clearScreenTriggered) {
                 if (balloons.length === 0) {
-                    // تفريغ أي شرارات ألعاب نارية متبقية لضمان إيقافها فوراً مع آخر بالونة
-                    fireworks = []; 
+                    fireworks = []; // إيقاف وإلغاء أي طرطوعة معلقة فورا
                     clearScreenTriggered = true;
                     
                     neonText.classList.add('fade-out-neon');
@@ -370,7 +370,7 @@
                         msgTriggered = true;
                         neonText.style.display = 'none';
                         
-                        // إنشاء اللمعات الفضية مهيأة للظهور التدريجي الناعم
+                        // إنشاء اللمعات الفضية مهيأة للظهور والاتساع التدريجي اللطيف
                         createSilverGlitter(); 
                         glittersFadeInActive = true; 
                         
@@ -442,17 +442,15 @@
         }
 
         function createSilverGlitter() {
-            for (let i = 0; i < 100; i++) {
-                let targetAlpha = Math.random() * 0.7 + 0.1;
+            for (let i = 0; i < 120; i++) { // زيادة بسيطة في عدد النقاط لتبدو فخمة
+                let maxAlpha = Math.random() * 0.6 + 0.2;
                 glitters.push({
                     x: Math.random() * cw,
                     y: Math.random() * ch,
                     r: Math.random() * 1.5 + 0.6,
-                    // تبدأ الشفافية من الصفر وتتصاعد تدريجياً
-                    alpha: 0.01, 
-                    currentMaxAlpha: 0.01, 
-                    targetMaxAlpha: targetAlpha,
-                    alphaChange: 0.007 * (Math.random() > 0.5 ? 1 : -1)
+                    alpha: Math.random() * maxAlpha, 
+                    maxAlpha: maxAlpha,
+                    alphaChange: (Math.random() * 0.005 + 0.003) * (Math.random() > 0.5 ? 1 : -1)
                 });
             }
         }
@@ -473,7 +471,7 @@
             startSequentialFireworks(); 
             startBalloons(); 
 
-            // يتوقف توليد البالونات والطراطيع معاً بعد 8 ثوانٍ، لنترك ثانيتين لآخر بالونة لتختفي تماماً وتصفى الشاشة
+            // مدة التوليد 8 ثوانٍ بالضبط، ونعطي ثانيتين لآخر بالونة لتختفي تماماً وبذلك يكتمل المشهد عند الثانية 10
             setTimeout(() => {
                 celebrationActive = false; 
                 clearInterval(balloonInterval); 
@@ -483,7 +481,7 @@
         }
 
         // ----------------- Typewriter Effect -----------------
-        const finalMessage = "Happy Birthday, my handsome love 🎂!!\n\nToday is not just any day, it’s the day the most special person in my life was born. I’m so lucky to have you by my side. You are my happiness, my comfort, and the reason behind so many of my smiles.\n\nI hope your birthday is as beautiful as your heart, and I hope this new year of your life brings you endless happiness, success, and everything you dream of .. Thank you for loving me, caring for me, and making my days brighter 😚!\n\nYou mean so much to me, and I’m grateful for every moment we share together. I hope you always know how special you are to me.\n\nI love you so much yosi 🩷!!";
+        const finalMessage = "Happy Birthday, my handsome love 🎂!!\n\nToday is not just any day, it’s the day the most special person in my life was born. I’m so lucky to have you by my side. You are my happiness, my comfort, and the reason behind so many of my smiles.\n\nI hope your birthday is as beautiful as your heart, and I hope this new year of your life brings you endless happiness, success, and everything you dream of .. Thank you for loving me, caring for me, and making my days brighter 😚!\n\nYou mean so much to me, and I’m grateful for every moment we share together. I hope you always know how special you are to me.\n\nI love you so much Yosi 🩷!!";
         
         function startTypewriter() {
             let i = 0;

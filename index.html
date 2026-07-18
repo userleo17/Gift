@@ -143,6 +143,7 @@
 
     <div class="ui-layer">
         <button id="startBtn">Click Me</button>
+        <!-- تم تعديل النص هنا بالضبط ليصبح كما طلبت -->
         <div id="neonText">Happy Birthday Yosi 🎉</div>
         <div id="chatBubble"></div>
     </div>
@@ -185,8 +186,7 @@
         let lastY = 0;
 
         let celebrationActive = false;
-        let fireworksTimerEnded = false;
-        let balloonsTimerEnded = false;
+        let celebrationTimerEnded = false;
         let clearScreenTriggered = false;
 
         function getHeartPoint(t, scale) {
@@ -326,9 +326,9 @@
                 if (b.y < -100) balloons.splice(i, 1);
             }
 
-            // التحقق من انتهاء الاحتفال واختفاء آخر بالونة تماماً
-            if (balloonsTimerEnded && !clearScreenTriggered) {
+            if (celebrationTimerEnded && !clearScreenTriggered) {
                 if (balloons.length === 0) {
+                    fireworks = []; 
                     celebrationActive = false; 
                     clearScreenTriggered = true;
                     
@@ -379,7 +379,7 @@
         }
 
         function createFirework() {
-            if (fireworksTimerEnded) return; 
+            if (celebrationTimerEnded) return; 
 
             const coords = generateRandomCoords();
             const colors = ['255, 77, 148', '255, 204, 0', '0, 255, 255', '255, 255, 255'];
@@ -399,7 +399,7 @@
         }
 
         function startSequentialFireworks() {
-            if (fireworksTimerEnded) return;
+            if (!celebrationActive) return;
             createFirework();
             setTimeout(startSequentialFireworks, 1000);
         }
@@ -410,7 +410,7 @@
         function startBalloons() {
             isGeneratingBalloons = true;
             balloonInterval = setInterval(() => {
-                if (isGeneratingBalloons && !balloonsTimerEnded) {
+                if (isGeneratingBalloons) {
                     balloons.push({
                         x: Math.random() * cw,
                         y: ch + 50,
@@ -446,22 +446,17 @@
         });
 
         function triggerNextPhase() {
+            neonText.classList.add('show-neon');
+            
             celebrationActive = true;
             startSequentialFireworks(); 
             startBalloons(); 
 
-            // تنتهي الالعاب النارية أولاً بعد 8 ثوانٍ
-            setTimeout(() => {
-                fireworksTimerEnded = true; 
-                fireworks = []; // إزالة أي جزيئات متبقية فوراً
-            }, 8000); 
-
-            // تنتهي البالونات بعد الألعاب النارية بثانيتين (عند الثانية 10)
             setTimeout(() => {
                 clearInterval(balloonInterval); 
                 isGeneratingBalloons = false; 
-                balloonsTimerEnded = true; 
-            }, 10000); 
+                celebrationTimerEnded = true; 
+            }, 8000); 
         }
 
         // ----------------- Typewriter Effect -----------------
